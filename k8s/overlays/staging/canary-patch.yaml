@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: app-canary
+spec:
+  replicas: 3
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20  # Start with 20% in staging
+        - pause:
+            duration: 120  # Shorter pause for testing
+        - setWeight: 60
+        - pause: {}
+  template:
+    spec:
+      containers:
+        - name: app
+          image: your-repo/app:v2  # Test v2
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOG_LEVEL
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: API_KEY

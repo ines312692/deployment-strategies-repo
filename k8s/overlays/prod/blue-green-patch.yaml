@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: app-bluegreen
+spec:
+  replicas: 5  # More replicas for prod
+  strategy:
+    blueGreen:
+      autoPromotionSeconds: 600  # Longer validation
+  template:
+    spec:
+      containers:
+        - name: app
+          image: your-repo/app:v2
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOG_LEVEL
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: API_KEY

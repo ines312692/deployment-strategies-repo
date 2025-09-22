@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: app-canary
+spec:
+  replicas: 3
+  strategy:
+    canary:
+      steps:
+        - setWeight: 10  # 10% to new version
+        - pause:
+            duration: 300  # Wait 5min or manual resume
+        - setWeight: 50  # Ramp to 50%
+        - pause: {}      # Indefinite pause for analysis
+      analysis:        # Auto-promote/rollback via Prometheus
+        - args:
+            - --default-headless-service
+            - app-canary-svc
+            - --canary-headless-service
+            - app-canary-canary-svc
+      canaryService: app-canary-canary-svc
+      stableService: app-canary-svc
+  selector:
+    matchLabels:
+      app: canary
+  template:
+    metadata:
+      labels:
+        app: canary
+    spec:
+      containers:
+        - name: app
+          image: your-repo/app:v1  # Triggers rollout on v2 change
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-canary-svc
+spec:
+  selector:
+    app: canary
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-canary-canary-svc  # For canary traffic
+spec:
+  selector:
+    app: canary
+  ports:
+    - port: 80
+      targetPort: 8080

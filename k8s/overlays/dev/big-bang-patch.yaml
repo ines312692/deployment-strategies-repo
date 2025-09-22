@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-big-bang
+spec:
+  replicas: 2  # Fewer replicas in dev
+  template:
+    spec:
+      containers:
+        - name: app
+          image: your-repo/app:v1  # Dev uses v1
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: LOG_LEVEL
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: API_KEY

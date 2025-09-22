@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate-analysis
+  namespace: default
+spec:
+  metrics:
+    - name: error-rate
+      interval: 30s
+      successCondition: result[0] <= 0.05  # Fail if error rate > 5%
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus.default.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{app="deployment-strategies",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{app="deployment-strategies"}[5m]))

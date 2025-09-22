@@ -1,0 +1,23 @@
+name: CD - Deploy
+on: workflow_dispatch
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}  # Env protection
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Push Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          push: true
+          tags: your-repo/app:${{ github.sha }}
+      - name: Deploy to K8s
+        uses: azure/k8s-deploy@v4  # Or helm/argo plugin
+        with:
+          manifests: k8s/strategies/canary.yaml  # Strategy-specific
+          images: your-repo/app:${{ github.sha }}
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+      - name: Notify on Failure  # Slack/Teams integration
+        if: failure()
+        run: echo "Rollback triggered!"

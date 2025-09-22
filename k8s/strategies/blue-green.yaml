@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: app-bluegreen
+spec:
+  replicas: 3
+  strategy:
+    blueGreen:
+      activeService: app-bluegreen-svc  # Production traffic
+      previewService: app-bluegreen-preview-svc  # Test new version
+      autoPromotionEnabled: false  # Manual promote
+      autoPromotionSeconds: 300    # Or auto after 5min
+  selector:
+    matchLabels:
+      app: bluegreen
+  template:
+    metadata:
+      labels:
+        app: bluegreen
+    spec:
+      containers:
+        - name: app
+          image: your-repo/app:v1
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bluegreen-svc
+spec:
+  selector:
+    app: bluegreen
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-bluegreen-preview-svc
+spec:
+  selector:
+    app: bluegreen
+  ports:
+    - port: 80
+      targetPort: 8080
